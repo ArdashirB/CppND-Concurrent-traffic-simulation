@@ -4,7 +4,7 @@
 
 /* Implementation of class "MessageQueue" */
 
-/* 
+
 template <typename T>
 T MessageQueue<T>::receive()
 {
@@ -19,7 +19,7 @@ void MessageQueue<T>::send(T &&msg)
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
@@ -43,16 +43,41 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 
 void TrafficLight::simulate()
 {
-    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class. 
+    // FP.2b : Finally, the private method „cycleThroughPhases“ 
+    should be started in a thread when the public method „simulate“ is called.
+     To do this, use the thread queue in the base class. 
 }
 
 // virtual function which is executed in a thread
+*/
 void TrafficLight::cycleThroughPhases()
 {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
+    std::random_device rd;
+	std::mt19937 eng(rd());
+	std::uniform_int_distribution<> distr(4, 6);
+    auto start_time = std::chrono::steady_clock::now();
+    while(true){
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start_time);
+        if (elapsed >= std::chrono::seconds{distr(eng)}){
+            //Toggle the traffic light status
+            if (_currentPhase == red)
+                _currentPhase = green;
+            else
+            {
+                _currentPhase = red;
+            }
+
+            //TODO***********
+            //Reset timer
+            start_time = std::chrono::steady_clock::now();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
 }
 
-*/
+
