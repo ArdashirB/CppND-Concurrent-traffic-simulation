@@ -48,9 +48,12 @@ void TrafficLight::waitForGreen()
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
     while(true){
-        TrafficLightPhase status = queue->recieve();
-        if (status == TrafficLightPhase::green)
+        std::cout<<"in wait for green 5\n";
+        TrafficLightPhase status = queue->recieve();//->
+        
+        if (status == TrafficLightPhase::green){
             return;
+        }   
     }
 }
 
@@ -65,6 +68,7 @@ void TrafficLight::simulate()
     should be started in a thread when the public method „simulate“ is called.
      To do this, use the thread queue in the base class. 
      */
+    std::cout<<"Here"<<"\n";
     threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
@@ -79,11 +83,13 @@ void TrafficLight::cycleThroughPhases()
     std::random_device rd;
 	std::mt19937 eng(rd());
 	std::uniform_int_distribution<> distr(4, 6);
-    auto start_time = std::chrono::steady_clock::now();
+    auto start_time = std::chrono::system_clock::now();
     // std::cout<<start_time.time_since_epoch<<"\n";
     while(true){
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start_time);
-        if (elapsed >= std::chrono::seconds{distr(eng)}){
+        std::cout<<"in cycle through phases\n";
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start_time);
+        if (elapsed >= std::chrono::seconds{4}){
+            std::cout<<"Here1"<<"\n";
             //Toggle the traffic light status
             if (_currentPhase == red){
                 _currentPhase = green;
@@ -99,11 +105,12 @@ void TrafficLight::cycleThroughPhases()
             enum TrafficLightPhase message = _currentPhase;
             auto thread = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, queue, 
                                                                                     std::move(message));
-            // thread.wait(); //do i need this since it stops at the queue ?
+            thread.wait(); 
 
             //Reset timer
-            start_time = std::chrono::steady_clock::now();
+            start_time = std::chrono::system_clock::now();
         }
+        else{ std::cout<<" still not elapsed\n";}
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
