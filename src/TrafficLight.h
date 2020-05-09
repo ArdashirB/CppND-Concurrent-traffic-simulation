@@ -24,10 +24,10 @@ class MessageQueue
 {
 public:
     T recieve();
-    void send(TrafficLightPhase &&msg);
+    void send(T&& msg);
 
 private:
-    std::deque<TrafficLightPhase> _queue;
+    std::deque<T> _queue;
     std::mutex _mtx;
     std::condition_variable _cond;
 };
@@ -47,8 +47,8 @@ class TrafficLight: TrafficObject
 {
 public:
     // constructor / desctructor
-    TrafficLight::TrafficLight();
-    TrafficLight::~TrafficLight();
+    TrafficLight();
+
 
 
     // getters / setters

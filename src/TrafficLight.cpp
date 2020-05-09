@@ -6,15 +6,23 @@
 
 
 template <typename T>
-T receive()
+T MessageQueue<T>::recieve()
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
     // The received object should then be returned by the receive function. 
+    //Create a unique lock and pass it to the condition variable
+    std::unique_lock<std::mutex> uLock(_mtx);
+    _cond.wait(uLock, [this](){return !_queue.empty();});
+
+    //remove last element from the queue and return it
+    T msg = std::move(_queue.back());
+    _queue.pop_back();
+    return msg;
 }
 
 template <typename T>
-void send(T &&msg)
+void MessageQueue<T>::send(T &&msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
@@ -28,7 +36,7 @@ void send(T &&msg)
 
 /* Implementation of class "TrafficLight" */
 
-/* 
+
 TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::red;
@@ -39,13 +47,18 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
+    while(true){
+        TrafficLightPhase status = queue->recieve();
+        if (status == TrafficLightPhase::green)
+            return;
+    }
 }
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
 {
     return _currentPhase;
 }
-*/
+
 void TrafficLight::simulate()
 {
     /* FP.2b : Finally, the private method „cycleThroughPhases“ 
@@ -67,22 +80,26 @@ void TrafficLight::cycleThroughPhases()
 	std::mt19937 eng(rd());
 	std::uniform_int_distribution<> distr(4, 6);
     auto start_time = std::chrono::steady_clock::now();
+    // std::cout<<start_time.time_since_epoch<<"\n";
     while(true){
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start_time);
         if (elapsed >= std::chrono::seconds{distr(eng)}){
             //Toggle the traffic light status
-            if (_currentPhase == red)
+            if (_currentPhase == red){
                 _currentPhase = green;
+                std::cout<<"turning green\n";
+            } 
             else
             {
+                std::cout<<"turning red\n";
                 _currentPhase = red;
             }
 
-            //TODO***********
+            
             enum TrafficLightPhase message = _currentPhase;
             auto thread = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, queue, 
                                                                                     std::move(message));
-            thread.wait(); //do i need this since it stops at the queue and also there is a 1ms delay??
+            // thread.wait(); //do i need this since it stops at the queue ?
 
             //Reset timer
             start_time = std::chrono::steady_clock::now();
