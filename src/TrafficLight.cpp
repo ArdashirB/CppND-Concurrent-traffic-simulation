@@ -6,7 +6,7 @@
 
 
 template <typename T>
-T MessageQueue<T>::receive()
+T receive()
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
     // to wait for and receive new messages and pull them from the queue using move semantics. 
@@ -14,10 +14,15 @@ T MessageQueue<T>::receive()
 }
 
 template <typename T>
-void MessageQueue<T>::send(T &&msg)
+void send(T &&msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+    // Perform vector modification under a lock
+    std::lock_guard<std::mutex> uLock(_mtx);
+    _queue.push_back(std::move(msg));
+    _cond.notify_one();
+
 }
 
 
@@ -40,16 +45,18 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 {
     return _currentPhase;
 }
-
+*/
 void TrafficLight::simulate()
 {
-    // FP.2b : Finally, the private method „cycleThroughPhases“ 
+    /* FP.2b : Finally, the private method „cycleThroughPhases“ 
     should be started in a thread when the public method „simulate“ is called.
      To do this, use the thread queue in the base class. 
+     */
+    threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
-*/
+
 void TrafficLight::cycleThroughPhases()
 {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
@@ -72,6 +79,11 @@ void TrafficLight::cycleThroughPhases()
             }
 
             //TODO***********
+            enum TrafficLightPhase message = _currentPhase;
+            auto thread = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, queue, 
+                                                                                    std::move(message));
+            thread.wait(); //do i need this since it stops at the queue and also there is a 1ms delay??
+
             //Reset timer
             start_time = std::chrono::steady_clock::now();
         }
